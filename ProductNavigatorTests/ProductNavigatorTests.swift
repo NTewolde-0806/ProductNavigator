@@ -4,9 +4,28 @@ import XCTest
 
 @MainActor
 final class ProductNavigatorTests: XCTestCase {
+    func testViewModelLoadsAndReplacesProductsFromProvider() {
+        let first = makeProduct(name: "First")
+        let second = makeProduct(name: "Second")
+        let provider = MutableProductProvider(items: [first])
+        let viewModel = ProductListViewModel(productProvider: provider)
+
+        XCTAssertTrue(viewModel.products.isEmpty)
+        viewModel.load()
+        XCTAssertEqual(viewModel.products, [first])
+
+        provider.items = [second]
+        viewModel.load()
+        XCTAssertEqual(viewModel.products, [second])
+
+        provider.items = []
+        viewModel.load()
+        XCTAssertTrue(viewModel.products.isEmpty)
+    }
+
     func testListDisplaysInjectedProducts() throws {
         let product = makeProduct(name: "Test product")
-        let list = ProductListViewController(productProvider: StubProductProvider(items: [product]))
+        let list = ProductListViewController(viewModel: ProductListViewModel(productProvider: StubProductProvider(items: [product])))
         list.loadViewIfNeeded()
 
         XCTAssertEqual(list.tableView(list.tableView, numberOfRowsInSection: 0), 1)
@@ -17,7 +36,7 @@ final class ProductNavigatorTests: XCTestCase {
     }
 
     func testEmptyProviderProducesNoRows() {
-        let list = ProductListViewController(productProvider: StubProductProvider(items: []))
+        let list = ProductListViewController(viewModel: ProductListViewModel(productProvider: StubProductProvider(items: [])))
         list.loadViewIfNeeded()
 
         XCTAssertEqual(list.tableView(list.tableView, numberOfRowsInSection: 0), 0)
@@ -25,7 +44,7 @@ final class ProductNavigatorTests: XCTestCase {
 
     func testSelectionReportsProductWithoutNavigating() {
         let products = [makeProduct(name: "First"), makeProduct(name: "Second")]
-        let list = ProductListViewController(productProvider: StubProductProvider(items: products))
+        let list = ProductListViewController(viewModel: ProductListViewModel(productProvider: StubProductProvider(items: products)))
         let delegate = SelectionSpy()
         list.delegate = delegate
         let navigation = UINavigationController(rootViewController: list)
@@ -60,7 +79,7 @@ final class ProductNavigatorTests: XCTestCase {
     }
 
     func testListDoesNotRetainItsDelegate() {
-        let list = ProductListViewController(productProvider: StubProductProvider(items: []))
+        let list = ProductListViewController(viewModel: ProductListViewModel(productProvider: StubProductProvider(items: [])))
         var delegate: SelectionSpy? = SelectionSpy()
         list.delegate = delegate
         delegate = nil
@@ -80,6 +99,17 @@ final class ProductNavigatorTests: XCTestCase {
 
 private struct StubProductProvider: ProductProviding {
     let items: [Product]
+
+    func products() -> [Product] { items }
+}
+
+@MainActor
+private final class MutableProductProvider: ProductProviding {
+    var items: [Product]
+
+    init(items: [Product]) {
+        self.items = items
+    }
 
     func products() -> [Product] { items }
 }

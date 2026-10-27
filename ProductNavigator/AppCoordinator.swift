@@ -14,7 +14,8 @@ final class AppCoordinator: ProductListViewControllerDelegate {
     }
 
     func start() {
-        let listViewController = ProductListViewController(productProvider: productProvider)
+        let viewModel = ProductListViewModel(productProvider: productProvider)
+        let listViewController = ProductListViewController(viewModel: viewModel)
         listViewController.delegate = self
         navigationController.setViewControllers([listViewController], animated: false)
     }
