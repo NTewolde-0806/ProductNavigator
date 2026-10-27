@@ -30,7 +30,43 @@ final class ProductListViewController: UITableViewController {
 
         title = "Products"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellIdentifier)
-        viewModel.load()
+        viewModel.onStateChange = { [weak self] in
+            self?.render()
+        }
+        loadProducts()
+    }
+
+    private func loadProducts() {
+        let viewModel = viewModel
+        Task {
+            await viewModel.load()
+        }
+    }
+
+    private func render() {
+        switch viewModel.state {
+        case .idle, .loaded:
+            contentUnavailableConfiguration = nil
+        case .loading:
+            var configuration = UIContentUnavailableConfiguration.loading()
+            configuration.text = "Loading products…"
+            contentUnavailableConfiguration = configuration
+        case .empty:
+            var configuration = UIContentUnavailableConfiguration.empty()
+            configuration.text = "No products available"
+            configuration.secondaryText = "Products will appear here when available."
+            contentUnavailableConfiguration = configuration
+        case let .failed(message):
+            var configuration = UIContentUnavailableConfiguration.empty()
+            configuration.text = "Couldn't load products"
+            configuration.secondaryText = message
+            configuration.button = .borderedProminent()
+            configuration.button.title = "Retry"
+            configuration.buttonProperties.primaryAction = UIAction { [weak self] _ in
+                self?.loadProducts()
+            }
+            contentUnavailableConfiguration = configuration
+        }
         tableView.reloadData()
     }
 

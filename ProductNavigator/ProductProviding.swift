@@ -1,3 +1,4 @@
+@MainActor
 protocol ProductProviding {
-    func products() -> [Product]
+    func products() async throws -> [Product]
 }

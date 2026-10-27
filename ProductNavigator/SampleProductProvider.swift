@@ -19,7 +19,7 @@ struct SampleProductProvider: ProductProviding {
         )
     ]
 
-    func products() -> [Product] {
+    func products() async -> [Product] {
         sampleProducts
     }
 }
